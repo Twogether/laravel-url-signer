@@ -1,4 +1,4 @@
-#URL Signer
+# URL Signer
 
 Signs and validates URLs with public/private keys. This is used
 so that a _Source_ application can make calls to a _Target_
@@ -20,7 +20,7 @@ The private key goes somewhere into the Source config, and the public
 key goes into the Target config.
 
 
-##Signing
+## Signing
 
 Now when you want to make a request from the Source, generate your
 target URL, and pass it through:
@@ -49,7 +49,7 @@ the list of errors is not exhaustive, if something's wrong it
 will bomb out immediately and only list the last error unless
 everything was missing.
 
-##Middleware
+## Middleware
 
 To get started quickly on your Targets, make sure the public key
 is accessible at `config('auth.twogether_url_public_key')` and
@@ -61,7 +61,7 @@ to a Middleware stack.
 
 ---
 
-####Note on keys
+#### Note on keys
 
 Your public and private keys can either be a one line string, or
 the proper 64-character per-line versions with -----BEGIN----- and 
