@@ -1,0 +1,36 @@
+{
+    "name": "twogether/laravel-url-signer",
+    "description": "Signs and validates URLs with public/private keys",
+    "type": "library",
+
+    "require": {
+        "php": "^7.1",
+        "predis/predis": "^1.1"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "Twogether\\LaravelURLSigner\\": "src/"
+        }
+    },
+
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Twogether\\LaravelURLSigner\\URLSignerServiceProvider"
+            ]
+        }
+    },
+
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
