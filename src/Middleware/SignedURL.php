@@ -10,14 +10,8 @@ class SignedURL
 {
     public function handle($request, Closure $next, $config = 'default')
     {
-        $publicKey = config('signed_urls.public_keys.'.$config);
-
-        if(!$publicKey) {
-            throw new PublicKeyNotFound();
-        }
-
         try {
-            URLSigner::validate($request->fullUrl,$publicKey);
+            URLSigner::validate($request->fullUrl,$config);
         } catch(InvalidSignedUrl $exception) {
             return response()->json($exception->errors(),401);
         }
