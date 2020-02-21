@@ -11,5 +11,9 @@ class URLSignerServiceProvider
         $this->commands([
             GenerateKeyPairCommand::class
         ]);
+
+        $this->publishes([
+            __DIR__.'/config.php' => config_path('signed_urls.php'),
+        ]);
     }
 }

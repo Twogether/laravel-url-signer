@@ -3,12 +3,25 @@ namespace Twogether\LaravelURLSigner;
 
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
+use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
+use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
+use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
 
 class URLSigner
 {
-    public static function sign(string $url,string $privateKey,string $source_app = null): string
+    public static function sign(string $url,string $config_name = 'default', string $privateKey = '',string $source_app = ''): string
     {
         $parts = parse_url($url);
+
+        if(!$privateKey) {
+
+            $privateKey = config('signed_urls.private_keys.'.$config_name);
+
+            if(!$privateKey) {
+                throw new PrivateKeyNotFound();
+            }
+        }
+
 
         $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
 
@@ -34,8 +47,15 @@ class URLSigner
         return $url."?".http_build_query($args);
     }
 
-    public static function validate($url,$publicKey): ValidationResult
+    public static function validate($url, string $config_name = 'default', string $publicKey = ''): bool
     {
+        if(!$publicKey) {
+            $publicKey = config('signed_urls.public_keys.'.$config_name);
+            if(!$publicKey) {
+                throw new PublicKeyNotFound();
+            }
+        }
+
         $errors = [
             'ac_ts' => 'Timestamp is missing',
             'ac_nc' => 'Nonce is missing',
@@ -46,7 +66,7 @@ class URLSigner
         $query = parse_url($url)['query'] ?? null;
 
         if(!$query) {
-            return new ValidationResult($errors);
+            throw new InvalidSignedUrl($errors);
         }
 
         parse_str($query,$params);
@@ -54,14 +74,14 @@ class URLSigner
         $errors = array_diff_key($errors,$params);
 
         if(count($errors)) {
-            return new ValidationResult($errors);
+            throw new InvalidSignedUrl($errors);
         }
 
         // All parameters are present
 
         // Check timestamp
         if(!is_numeric($params['ac_ts']) || $params['ac_ts'] > time()+120 || $params['ac_ts'] < time() - 120) {
-            return new ValidationResult(['ac_ts' => 'Timestamp is invalid']);
+            throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
         }
 
         // Check nonce has not been used
@@ -70,7 +90,7 @@ class URLSigner
         if(Redis::setNx($nonce_key,1)) {
             Redis::expire($nonce_key,120);
         } else {
-            return new ValidationResult(['ac_nc' => 'Nonce for '.$params['ac_sc'].' has been used already']);
+            throw new InvalidSignedUrl(['ac_nc' => 'Nonce for '.$params['ac_sc'].' has been used already']);
         }
 
         // Check signature
@@ -87,13 +107,10 @@ class URLSigner
         );
 
         if(!$valid) {
-            return new ValidationResult(['ac_sg' => 'Signature is invalid']);
+            throw new InvalidSignedUrl(['ac_sg' => 'Signature is invalid']);
         }
 
-
-        //parse_str(,$params);
-
-        return new ValidationResult([]);
+        return true;
     }
 
 }

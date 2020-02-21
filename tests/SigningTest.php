@@ -1,6 +1,9 @@
 <?php
 namespace Tests;
 
+use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
+use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
+use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
 use Twogether\LaravelURLSigner\URLSigner;
 
 class SigningTest
@@ -14,22 +17,76 @@ class SigningTest
         parent::setUp();
         $this->privateKey = $this->getResource('dummy_private_key.txt');
         $this->publicKey = $this->getResource('dummy_public_key.txt');
+
+        config(['signed_urls.private_keys.default' => $this->privateKey]);
+        config(['signed_urls.public_keys.default' => $this->publicKey]);
     }
+
+    public function test_a_missing_private_key_triggers_an_exception()
+    {
+        config(['signed_urls.private_keys.default' => '']);
+
+        $this->expectException(PrivateKeyNotFound::class);
+
+        URLSigner::sign('https://example.com');
+    }
+
+    public function test_a_missing_public_key_triggers_an_exception()
+    {
+        config(['signed_urls.public_keys.default' => '']);
+        $this->expectException(PublicKeyNotFound::class);
+
+        URLSigner::validate('https://example.com');
+    }
+
+    public function test_an_alternative_config_can_be_used()
+    {
+        $this->expectNotToPerformAssertions();
+        config(['signed_urls.private_keys.different' => $this->privateKey]);
+        URLSigner::sign('https://example.com','different');
+    }
+
+    public function test_an_alternative_config_can_be_used_for_public_keys()
+    {
+        config(['signed_urls.public_keys.different' => $this->publicKey]);
+        $signed = URLSigner::sign('https://example.com');
+        $this->assertTrue(URLSigner::validate($signed,'different'));
+    }
+
+    public function test_a_non_existent_config_triggers_exception()
+    {
+        $this->expectException(PrivateKeyNotFound::class);
+        URLSigner::sign('https://example.com','not_implemented');
+    }
+
+    public function test_passing_nothing_triggers_an_exception()
+    {
+        $this->expectException(PrivateKeyNotFound::class);
+        URLSigner::sign('https://example.com','','');
+    }
+
+    public function test_validating_with_nothing_triggers_an_exception()
+    {
+        $this->expectException(PublicKeyNotFound::class);
+        URLSigner::validate('https://example.com','','');
+    }
+
     
     public function test_a_url_with_just_host_works()
     {
         $url = 'https://example.com';
 
-        $signed = URLSigner::sign($url,$this->privateKey);
+        $signed = URLSigner::sign($url);
 
         $this->assertEquals($url,
             substr($signed,0,strlen($url))
         );
     }
 
+
     public function test_parameters_are_present()
     {
-        $signed = URLSigner::sign('https://example.com',$this->privateKey);
+        $signed = URLSigner::sign('https://example.com');
 
         parse_str(parse_url($signed)['query'],$params);
 
@@ -43,7 +100,7 @@ class SigningTest
     {
         $url = 'https://example.com/foo';
 
-        $signed = URLSigner::sign($url,$this->privateKey);
+        $signed = URLSigner::sign($url);
 
         $this->assertEquals($url,
             substr($signed,0,strlen($url))
@@ -55,7 +112,7 @@ class SigningTest
         $root = 'https://example.com/foo';
         $url = $root.'?xyz=abc';
 
-        $signed = URLSigner::sign($url,$this->privateKey);
+        $signed = URLSigner::sign($url);
 
         $this->assertEquals($root,
             substr($signed,0,strlen($root))
@@ -67,7 +124,7 @@ class SigningTest
     public function test_query_parameters_are_preserved()
     {
         $url = 'https://example.com/foo?xyz=abc';
-        $signed = URLSigner::sign($url,$this->privateKey);
+        $signed = URLSigner::sign($url);
 
         parse_str(parse_url($signed)['query'],$params);
 
@@ -79,30 +136,32 @@ class SigningTest
      */
     public function test_a_signature_can_be_validated()
     {
-        $signed = URLSigner::sign('https://example.com',$this->privateKey);
+        $signed = URLSigner::sign('https://example.com');
 
-        $this->assertTrue(URLSigner::validate($signed,$this->publicKey)->isValid());
+        $this->assertTrue(URLSigner::validate($signed));
     }
 
     /**
      * @group validation
      */
-    public function test_parameters_cannot_be_missing()
+    public function test_all_parameters_cannot_be_missing()
     {
-        $validated = URLSigner::validate('https://example.com',$this->publicKey);
-        $this->assertFalse($validated->isValid());
-        $this->assertCount(4,$validated->errors());
+        $this->expectException(InvalidSignedUrl::class);
+        URLSigner::validate('https://example.com');
+        $this->assertCount(4,$this->getExpectedException()->errors());
     }
 
     /**
      * @group validation
      */
-    public function test_an_individual_parameter_cannot_be_missing()
+    public function test_some_parameters_cannot_be_missing()
     {
-        $validated = URLSigner::validate('https://example.com?ac_sg=1&ac_ts=444',$this->publicKey);
-        $this->assertFalse($validated->isValid());
-        $this->assertCount(2,$validated->errors());
-        $this->assertArrayHasKey('ac_nc',$validated->errors());
+        $this->expectException(InvalidSignedUrl::class);
+
+        URLSigner::validate('https://example.com?ac_sg=1&ac_ts=444');
+
+        $this->assertCount(2,$this->getExpectedException()->errors());
+        $this->assertArrayHasKey('ac_nc',$this->getExpectedException()->errors());
     }
 
     /**
@@ -119,8 +178,9 @@ class SigningTest
      */
     public function test_a_timestamp_in_the_far_future_fails()
     {
+        $this->expectException(InvalidSignedUrl::class);
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()+400]);
-        $this->assertFalse(URLSigner::validate($url,$this->publicKey)->isValid());
+        URLSigner::validate($url);
     }
 
     /**
@@ -129,9 +189,11 @@ class SigningTest
     public function test_a_timestamp_in_the_far_past_fails()
     {
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()-400]);
-        $result = URLSigner::validate($url,$this->publicKey);
-        $this->assertFalse($result->isValid());
-        $this->assertArrayHasKey('ac_ts',$result->errors());
+        $this->expectException(InvalidSignedUrl::class);
+
+        URLSigner::validate($url);
+
+        $this->assertArrayHasKey('ac_ts',$this->getExpectedException()->errors());
     }
 
     /**
@@ -139,20 +201,22 @@ class SigningTest
      */
     public function test_a_timestamp_slightly_off_is_okay()
     {
-        $url = URLSigner::sign('https://example.com',$this->privateKey);
+        $url = URLSigner::sign('https://example.com');
         sleep(1);
-        $this->assertTrue(URLSigner::validate($url,$this->publicKey)->isValid());
+        $this->assertTrue(URLSigner::validate($url));
     }
 
     /**
      * @group validation
      */
-    public function test_a_nonce_cannot_be_reused()
+    public function test_a_signed_url_cannot_be_reused()
     {
-        $url = URLSigner::sign('https://example.com',$this->privateKey);
+        $url = URLSigner::sign('https://example.com');
 
-        $this->assertTrue(URLSigner::validate($url,$this->publicKey)->isValid());
-        $this->assertFalse(URLSigner::validate($url,$this->publicKey)->isValid());
+        $this->assertTrue(URLSigner::validate($url));
+
+        $this->expectException(InvalidSignedUrl::class);
+        URLSigner::validate($url);
     }
 
     /**
@@ -161,9 +225,11 @@ class SigningTest
     public function test_a_tampered_signature_causes_a_failure()
     {
         $url = $this->tamperWithSignedUrl(['ac_sg' => 'tampered']);
-        $result = URLSigner::validate($url,$this->publicKey);
-        $this->assertFalse($result->isValid());
-        $this->assertArrayHasKey('ac_sg',$result->errors());
+        $this->expectException(InvalidSignedUrl::class);
+
+        URLSigner::validate($url);
+
+        $this->assertArrayHasKey('ac_sg',$this->getExpectedException()->errors());
     }
 
 
@@ -172,8 +238,10 @@ class SigningTest
      */
     public function test_tampering_with_the_timestamp_causes_a_failure()
     {
+        $this->expectException(InvalidSignedUrl::class);
+
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()-2]);
-        $this->assertFalse(URLSigner::validate($url,$this->publicKey)->isValid());
+        URLSigner::validate($url);
     }
 
 
@@ -182,8 +250,10 @@ class SigningTest
      */
     public function test_any_other_tampering_causes_a_failure()
     {
+        $this->expectException(InvalidSignedUrl::class);
+
         $url = $this->tamperWithSignedUrl(['foo' => 'bar']);
-        $this->assertFalse(URLSigner::validate($url,$this->publicKey)->isValid());
+        URLSigner::validate($url);
     }
 
 
@@ -197,7 +267,7 @@ class SigningTest
     private function tamperWithSignedUrl(array $tamper)
     {
         $base = 'https://example.com';
-        $signed = URLSigner::sign($base,$this->privateKey);
+        $signed = URLSigner::sign($base);
         parse_str(parse_url($signed)['query'],$params);
 
         $params = array_merge($params,$tamper);
