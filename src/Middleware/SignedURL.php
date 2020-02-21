@@ -11,7 +11,7 @@ class SignedURL
     public function handle($request, Closure $next, $config = 'default')
     {
         try {
-            URLSigner::validate($request->fullUrl,$config);
+            URLSigner::validate($request->fullUrl(),$config);
         } catch(InvalidSignedUrl $exception) {
             return response()->json($exception->errors(),401);
         }
