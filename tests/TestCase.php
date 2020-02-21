@@ -1,5 +1,5 @@
 <?php
-namespace Tests;
+namespace Twogether\LaravelURLSignerTests;
 
 use Illuminate\Support\Facades\Redis;
 use Twogether\LaravelURLSigner\URLSignerServiceProvider;

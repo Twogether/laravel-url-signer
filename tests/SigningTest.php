@@ -1,5 +1,5 @@
 <?php
-namespace Tests;
+namespace Twogether\LaravelURLSignerTests;
 
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
 use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
