@@ -83,6 +83,17 @@ class SigningTest
         );
     }
 
+    public function test_only_a_path_works()
+    {
+        $url = '/';
+
+        $signed = URLSigner::sign($url);
+
+        $this->assertEquals($url,
+            substr($signed,0,strlen($url))
+        );
+    }
+
 
     public function test_parameters_are_present()
     {

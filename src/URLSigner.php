@@ -22,8 +22,17 @@ class URLSigner
             }
         }
 
+        $url = "";
 
-        $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
+        if(array_key_exists('scheme',$parts)) {
+            $url = $parts['scheme']."://";
+        }
+
+        if(array_key_exists('host',$parts)) {
+            $url .= $parts['host'];
+        }
+
+        $url .= ($parts['path'] ?? '');
 
         parse_str($parts['query'] ?? '',$args);
 
