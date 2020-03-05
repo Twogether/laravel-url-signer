@@ -34,7 +34,7 @@ class SignedUrl
 
     public function __toString()
     {
-        return URLSigner::sign($this->url,$this->config,$this->key,$this->source);
+        return URLSigner::sign($this->url,$this->config,$this->source,$this->key);
     }
 
     public function get()
