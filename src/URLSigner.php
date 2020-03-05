@@ -111,7 +111,7 @@ class URLSigner
         $valid = openssl_verify(
             http_build_query($params),
             base64_decode($signature),
-            $publicKey,
+            KeyFormatter::fromString($publicKey,false),
             OPENSSL_ALGO_SHA256
         );
 
