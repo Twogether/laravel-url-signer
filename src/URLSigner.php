@@ -9,7 +9,7 @@ use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
 
 class URLSigner
 {
-    public static function sign(string $url,string $config_name = 'default', string $privateKey = '',string $source_app = ''): string
+    public static function sign(string $url,string $config_name = 'default',string $source_app = '', string $privateKey = ''): string
     {
         $parts = parse_url($url);
 
