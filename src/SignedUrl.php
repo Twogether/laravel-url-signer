@@ -23,7 +23,7 @@ class SignedUrl
     public function withKey(string $key)
     {
         $this->key = $key;
-        return $key;
+        return $this;
     }
 
     public function withSource(string $source)
