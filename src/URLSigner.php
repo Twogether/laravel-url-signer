@@ -9,7 +9,7 @@ use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
 
 class URLSigner
 {
-    public static function sign(string $url,string $config_name = 'default',string $source_app = '', string $privateKey = ''): string
+    public static function sign(string $url,string $config_name = 'default',string $source_app = '', string $privateKey = '',int $expires = null): string
     {
         $parts = parse_url($url);
 
@@ -36,6 +36,7 @@ class URLSigner
 
         parse_str($parts['query'] ?? '',$args);
 
+        $args['ac_xp'] = $expires ?: time() + 120;
         $args['ac_ts'] = time();
         $args['ac_nc'] = Redis::incr('nonce_'.$args['ac_ts']);
         $args['ac_sc'] = Str::slug($source_app ?: config('app.name'));
@@ -89,7 +90,17 @@ class URLSigner
         // All parameters are present
 
         // Check timestamp
-        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] > time()+120 || $params['ac_ts'] < time() - 120) {
+
+        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] > time()+120) {
+            throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
+        }
+
+        if(array_key_exists('ac_xp',$params) && is_numeric($params['ac_xp'])) {
+            if($params['ac_xp'] < time()) {
+                throw new InvalidSignedUrl(['ac_xp' => 'URL has expired']);
+            }
+
+        } else if($params['ac_ts'] < time() - 120) {
             throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
         }
 

@@ -4,6 +4,7 @@ namespace Twogether\LaravelURLSignerTests;
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
 use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
 use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
+use Twogether\LaravelURLSigner\SignedUrl;
 use Twogether\LaravelURLSigner\URLSigner;
 
 class SigningTest
@@ -267,8 +268,31 @@ class SigningTest
         URLSigner::validate($url);
     }
 
+    /**
+     * @group expiry
+     */
+    public function test_a_url_within_expiry_is_valid()
+    {
+        $this->expectNotToPerformAssertions();
 
+        $url = (new SignedUrl('https://example.com'))
+            ->withExpiry(time()+300);
 
+        URLSigner::validate($url);
+    }
+
+    /**
+     * @group expiry
+     */
+    public function test_an_expired_url_is_invalid()
+    {
+        $this->expectException(InvalidSignedUrl::class);
+
+        $url = (new SignedUrl('https://example.com'))
+            ->withExpiry(time()-300);
+
+        URLSigner::validate($url);
+    }
 
 
     /**

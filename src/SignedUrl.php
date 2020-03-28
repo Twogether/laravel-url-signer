@@ -7,6 +7,7 @@ class SignedUrl
     private $config = 'default';
     private $source = '';
     private $key = '';
+    private $expiry;
 
     public function __construct(string $url)
     {
@@ -26,6 +27,12 @@ class SignedUrl
         return $this;
     }
 
+    public function withExpiry(int $expiry)
+    {
+        $this->expiry = $expiry;
+        return $this;
+    }
+
     public function withSource(string $source)
     {
         $this->source = $source;
@@ -34,7 +41,7 @@ class SignedUrl
 
     public function __toString()
     {
-        return URLSigner::sign($this->url,$this->config,$this->source,$this->key);
+        return URLSigner::sign($this->url,$this->config,$this->source,$this->key,$this->expiry ?: time()+120);
     }
 
     public function get()
