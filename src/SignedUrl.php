@@ -9,6 +9,11 @@ class SignedUrl
     private $key = '';
     private $expiry;
 
+    public static function create(string $url): SignedUrl
+    {
+        return new static($url);
+    }
+
     public function __construct(string $url)
     {
         $this->url = $url;

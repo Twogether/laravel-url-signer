@@ -275,7 +275,7 @@ class SigningTest
     {
         $this->expectNotToPerformAssertions();
 
-        $url = (new SignedUrl('https://example.com'))
+        $url = SignedUrl::create('https://example.com')
             ->withExpiry(time()+300);
 
         URLSigner::validate($url);
@@ -288,7 +288,7 @@ class SigningTest
     {
         $this->expectException(InvalidSignedUrl::class);
 
-        $url = (new SignedUrl('https://example.com'))
+        $url = SignedUrl::create('https://example.com')
             ->withExpiry(time()-300);
 
         URLSigner::validate($url);
