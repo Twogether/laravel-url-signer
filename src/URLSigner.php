@@ -71,6 +71,7 @@ class URLSigner
             'ac_nc' => 'Nonce is missing',
             'ac_sg' => 'Signature is missing',
             'ac_sc' => 'Source identifier is missing',
+            'ac_xp' => 'Expiry is missing',
         ];
 
         $query = parse_url($url)['query'] ?? null;
@@ -91,24 +92,21 @@ class URLSigner
 
         // Check timestamp
 
-        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] > time()+120) {
+        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] < time()-120) {
             throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
         }
 
-        if(array_key_exists('ac_xp',$params) && is_numeric($params['ac_xp'])) {
-            if($params['ac_xp'] < time()) {
-                throw new InvalidSignedUrl(['ac_xp' => 'URL has expired']);
-            }
+        // Check expiry
 
-        } else if($params['ac_ts'] < time() - 120) {
-            throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
+        if(!is_numeric($params['ac_xp']) || $params['ac_xp'] < time()) {
+            throw new InvalidSignedUrl(['ac_xp' => 'URL has expired']);
         }
 
         // Check nonce has not been used
         $nonce_key = implode('|',['ac_nonce',$params['ac_sc'],$params['ac_ts'],$params['ac_nc']]);
 
         if(Redis::setNx($nonce_key,1)) {
-            Redis::expire($nonce_key,120);
+            Redis::expire($nonce_key,$params['ac_xp'] - time());
         } else {
             throw new InvalidSignedUrl(['ac_nc' => 'Nonce for '.$params['ac_sc'].' has been used already']);
         }
