@@ -92,7 +92,7 @@ class URLSigner
 
         // Check timestamp
 
-        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] < time()-120) {
+        if(!is_numeric($params['ac_ts']) || $params['ac_ts'] > time() + 120) {
             throw new InvalidSignedUrl(['ac_ts' => 'Timestamp is invalid']);
         }
 
