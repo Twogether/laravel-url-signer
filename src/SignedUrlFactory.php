@@ -80,7 +80,7 @@ class SignedUrlFactory
         $nonce_key = implode('|',['signed-urls-signed-nonce',$params['ac_sc'],$params['ac_ts'],$params['ac_nc']]);
 
         if(!$this->cacheBroker->setNx($nonce_key,1,$params['ac_xp'] - time())) {
-            throw new InvalidSignedUrl(['ac_nc' => 'Nonce for '.$params['ac_sc'].' has been used already '.$nonce_key]);
+            throw new InvalidSignedUrl(['ac_nc' => 'Nonce for '.$params['ac_sc'].' has been used already']);
         }
 
         // Check signature

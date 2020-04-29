@@ -18,6 +18,8 @@ class URLSignerServiceProvider
         $this->publishes([
             __DIR__.'/config.php' => config_path('signed_urls.php'),
         ]);
+
+        $this->app['router']->aliasMiddleware('signed_url',\Twogether\LaravelURLSigner\Middleware\SignedURL::class);
     }
 
     public function register()
