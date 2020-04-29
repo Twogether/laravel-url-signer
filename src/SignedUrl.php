@@ -1,18 +1,20 @@
 <?php
 namespace Twogether\LaravelURLSigner;
 
+use Twogether\LaravelURLSigner\Contracts\CacheBroker;
+use Twogether\LaravelURLSigner\Contracts\KeyProvider;
+use Twogether\LaravelURLSigner\Exceptions\InvalidUrl;
+use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
+
 class SignedUrl
 {
+    private $cacheBroker;
+    private $keyProvider;
     private $url;
-    private $config = 'default';
     private $source = '';
     private $key = '';
+    private $keyName = 'default';
     private $expiry;
-
-    public static function create(string $url): SignedUrl
-    {
-        return new static($url);
-    }
 
     public function __construct(string $url)
     {
@@ -20,9 +22,21 @@ class SignedUrl
         return $this;
     }
 
-    public function withConfig(string $config): SignedUrl
+    public function setCacheBroker(CacheBroker $cacheBroker): SignedUrl
     {
-        $this->config = $config;
+        $this->cacheBroker = $cacheBroker;
+        return $this;
+    }
+
+    public function withKeyName(string $keyName): SignedUrl
+    {
+        $this->keyName = $keyName;
+        return $this;
+    }
+
+    public function setKeyProvider(KeyProvider $keyProvider): SignedUrl
+    {
+        $this->keyProvider = $keyProvider;
         return $this;
     }
 
@@ -46,12 +60,55 @@ class SignedUrl
 
     public function __toString(): string
     {
-        return URLSigner::sign($this->url,$this->config,$this->source,$this->key,$this->expiry ?: time()+120);
+        return $this->get();
     }
 
     public function get(): string
     {
-        return $this->__toString();
+        $parts = parse_url($this->url);
+
+        $key = $this->getKey();
+
+        if(!array_key_exists('scheme',$parts) || !array_key_exists('host',$parts)) {
+            throw new InvalidUrl;
+        }
+
+        $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
+
+        parse_str($parts['query'] ?? '',$args);
+
+        $args['ac_xp'] = $this->expiry ?: time() + 120;
+        $args['ac_ts'] = time();
+        $args['ac_nc'] = $this->cacheBroker->incr('signed-urls-signing-nonce_'.$args['ac_ts'],300);
+        $args['ac_sc'] = $this->source;
+
+        ksort($args);
+
+        openssl_sign(
+            http_build_query($args),
+            $signature,
+            KeyFormatter::fromString($key,true),
+            OPENSSL_ALGO_SHA256
+        );
+
+        $args['ac_sg'] = base64_encode($signature);
+
+        return $url."?".http_build_query($args);
+
+    }
+
+    private function getKey(): string
+    {
+        if($this->key) {
+            return $this->key;
+        }
+
+        if(!$this->keyProvider) {
+            throw new \Exception("No Key, and no Key Provider specified");
+        }
+
+        return $this->keyProvider->getPrivateKey($this->keyName);
+
     }
 
 

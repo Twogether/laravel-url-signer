@@ -10,11 +10,14 @@
 
 
 return [
-    'public_keys' => [
-        'default' => env('SIGNED_URLS_PUBLIC_KEY')
+
+    'app_name' => null, // defaults to Str::slug(config('app.name'))
+
+    'keys' => [
+        'default' => [
+            'public' => env('SIGNED_URLS_PUBLIC_KEY'),
+            'private' => env('SIGNED_URLS_PRIVATE_KEY')
+        ],
     ],
 
-    'private_keys' => [
-        'default' => env('SIGNED_URLS_PRIVATE_KEY')
-    ],
 ];

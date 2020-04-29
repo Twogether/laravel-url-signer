@@ -3,15 +3,13 @@ namespace Twogether\LaravelURLSigner\Middleware;
 
 use Closure;
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
-use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
-use Twogether\LaravelURLSigner\URLSigner;
 
 class SignedURL
 {
-    public function handle($request, Closure $next, $config = 'default')
+    public function handle($request, Closure $next, $keyName = 'default')
     {
         try {
-            URLSigner::validate($request->fullUrl(),$config);
+            app('Twogether\URLSigner')->validate($request->fullUrl(),$keyName);
         } catch(InvalidSignedUrl $exception) {
             return response()->json($exception->errors(),401);
         }

@@ -2,16 +2,19 @@
 namespace Twogether\LaravelURLSignerTests;
 
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
+use Twogether\LaravelURLSigner\Exceptions\InvalidUrl;
 use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
 use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
-use Twogether\LaravelURLSigner\SignedUrl;
-use Twogether\LaravelURLSigner\URLSigner;
+use Twogether\LaravelURLSigner\KeyProviders\ConfigKeyProvider;
+use Twogether\LaravelURLSigner\CacheBrokers\LaravelCacheBroker;
+use Twogether\LaravelURLSigner\SignedUrlFactory;
 
 class SigningTest
     extends TestCase
 {
     private $privateKey;
     private $publicKey;
+    private $factory;
     
     public function setUp(): void
     {
@@ -19,112 +22,141 @@ class SigningTest
         $this->privateKey = $this->getResource('dummy_private_key.txt');
         $this->publicKey = $this->getResource('dummy_public_key.txt');
 
-        config(['signed_urls.private_keys.default' => $this->privateKey]);
-        config(['signed_urls.public_keys.default' => $this->publicKey]);
+        config(['signed_urls.keys.default.private' => $this->privateKey]);
+        config(['signed_urls.keys.default.public' => $this->publicKey]);
+
+        $this->factory = new SignedUrlFactory(
+            'test',
+            new LaravelCacheBroker(),
+            new ConfigKeyProvider()
+        );
     }
 
+    /**
+     * @group v2
+     */
     public function test_a_missing_private_key_triggers_an_exception()
     {
-        config(['signed_urls.private_keys.default' => '']);
-
+        config(['signed_urls.keys.default.private' => '']);
         $this->expectException(PrivateKeyNotFound::class);
-
-        URLSigner::sign('https://example.com');
+        $this->factory->create('https://example.com')->get();
     }
 
+    /**
+     * @group v2
+     */
     public function test_a_missing_public_key_triggers_an_exception()
     {
-        config(['signed_urls.public_keys.default' => '']);
+        config(['signed_urls.keys.default.public' => '']);
         $this->expectException(PublicKeyNotFound::class);
-
-        URLSigner::validate('https://example.com');
+        $signed = $this->factory->create('https://example.com')->get();
+        $this->factory->validate($signed);
     }
 
-    public function test_an_alternative_config_can_be_used()
+    /**
+     * @group v2
+     */
+    public function test_an_alternative_key_can_be_used()
     {
         $this->expectNotToPerformAssertions();
-        config(['signed_urls.private_keys.different' => $this->privateKey]);
-        URLSigner::sign('https://example.com','different');
+        config(['signed_urls.keys.different.private' => $this->privateKey]);
+        $this->factory->create('https://example.com','different')->get();
     }
 
-    public function test_an_alternative_config_can_be_used_for_public_keys()
+
+    public function test_an_alternative_key_can_be_used_for_validation()
     {
-        config(['signed_urls.public_keys.different' => $this->publicKey]);
-        $signed = URLSigner::sign('https://example.com');
-        $this->assertTrue(URLSigner::validate($signed,'different'));
+        config(['signed_urls.keys.different.public' => $this->publicKey]);
+        $signed = $this->factory->create('https://example.com')->get();
+        $this->assertTrue($this->factory->validate($signed,'different'));
     }
 
-    public function test_a_non_existent_config_triggers_exception()
+    /**
+     * @group v2
+     */
+    public function test_a_non_existent_key_triggers_exception()
     {
         $this->expectException(PrivateKeyNotFound::class);
-        URLSigner::sign('https://example.com','not_implemented');
+        $this->factory->create('https://example.com','not_implemented')->get();
     }
 
+    /**
+     * @group v2
+     */
     public function test_passing_nothing_triggers_an_exception()
     {
         $this->expectException(PrivateKeyNotFound::class);
-        URLSigner::sign('https://example.com','','');
+        $this->factory->create('https://example.com','')->get();
     }
 
     public function test_validating_with_nothing_triggers_an_exception()
     {
-        $this->expectException(PublicKeyNotFound::class);
-        URLSigner::validate('https://example.com','','');
+        $this->expectException(InvalidSignedUrl::class);
+        $this->factory->validate('https://example.com','','');
     }
 
-    
+    /**
+     * @group v2
+     */
     public function test_a_url_with_just_host_works()
     {
         $url = 'https://example.com';
 
-        $signed = URLSigner::sign($url);
+        $signed = $this->factory->create($url)->get();
 
         $this->assertEquals($url,
             substr($signed,0,strlen($url))
         );
     }
 
-    public function test_only_a_path_works()
+    /**
+     * @group v2
+     */
+    public function test_an_invalid_url_throws_an_exception()
     {
-        $url = '/';
-
-        $signed = URLSigner::sign($url);
-
-        $this->assertEquals($url,
-            substr($signed,0,strlen($url))
-        );
+        $this->expectException(InvalidUrl::class);
+        $this->factory->create("/")->get();
     }
 
-
+    /**
+     * @group v2
+     */
     public function test_parameters_are_present()
     {
-        $signed = URLSigner::sign('https://example.com');
+        $signed = $this->factory->create('https://example.com')->get();
 
         parse_str(parse_url($signed)['query'],$params);
 
         $this->assertArrayHasKey('ac_nc',$params);
         $this->assertArrayHasKey('ac_sg',$params);
         $this->assertArrayHasKey('ac_ts',$params);
+        $this->assertArrayHasKey('ac_xp',$params);
 
     }
 
+    /**
+     * @group v2
+     */
     public function test_a_url_with_path_works()
     {
         $url = 'https://example.com/foo';
 
-        $signed = URLSigner::sign($url);
+        $signed = $this->factory->create($url)->get();
 
         $this->assertEquals($url,
             substr($signed,0,strlen($url))
         );
     }
 
+    /**
+     * @group v2
+     */
     public function test_query_strings_are_not_doubled_up()
     {
         $root = 'https://example.com/foo';
         $url = $root.'?xyz=abc';
 
-        $signed = URLSigner::sign($url);
+        $signed = $this->factory->create($url)->get();
 
         $this->assertEquals($root,
             substr($signed,0,strlen($root))
@@ -133,10 +165,13 @@ class SigningTest
         $this->assertEquals(1,substr_count($signed,"?"));
     }
 
+    /**
+     * @group v2
+     */
     public function test_query_parameters_are_preserved()
     {
         $url = 'https://example.com/foo?xyz=abc';
-        $signed = URLSigner::sign($url);
+        $signed = $this->factory->create($url)->get();
 
         parse_str(parse_url($signed)['query'],$params);
 
@@ -148,9 +183,9 @@ class SigningTest
      */
     public function test_a_signature_can_be_validated()
     {
-        $signed = URLSigner::sign('https://example.com');
+        $signed = $this->factory->create('https://example.com')->get();
 
-        $this->assertTrue(URLSigner::validate($signed));
+        $this->assertTrue($this->factory->validate($signed));
     }
 
     /**
@@ -159,7 +194,7 @@ class SigningTest
     public function test_all_parameters_cannot_be_missing()
     {
         $this->expectException(InvalidSignedUrl::class);
-        URLSigner::validate('https://example.com');
+        $this->factory->validate('https://example.com');
         $this->assertCount(4,$this->getExpectedException()->errors());
     }
 
@@ -170,7 +205,7 @@ class SigningTest
     {
         $this->expectException(InvalidSignedUrl::class);
 
-        URLSigner::validate('https://example.com?ac_sg=1&ac_ts=444');
+        $this->factory->validate('https://example.com?ac_sg=1&ac_ts=444');
 
         $this->assertCount(2,$this->getExpectedException()->errors());
         $this->assertArrayHasKey('ac_nc',$this->getExpectedException()->errors());
@@ -192,7 +227,7 @@ class SigningTest
     {
         $this->expectException(InvalidSignedUrl::class);
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()+400]);
-        URLSigner::validate($url);
+        $this->factory->validate($url);
     }
 
     /**
@@ -203,7 +238,7 @@ class SigningTest
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()-400]);
         $this->expectException(InvalidSignedUrl::class);
 
-        URLSigner::validate($url);
+        $this->factory->validate($url);
 
         $this->assertArrayHasKey('ac_ts',$this->getExpectedException()->errors());
     }
@@ -213,9 +248,9 @@ class SigningTest
      */
     public function test_a_timestamp_slightly_off_is_okay()
     {
-        $url = URLSigner::sign('https://example.com');
+        $url = $this->factory->create('https://example.com')->get();
         sleep(1);
-        $this->assertTrue(URLSigner::validate($url));
+        $this->assertTrue($this->factory->validate($url));
     }
 
     /**
@@ -223,12 +258,12 @@ class SigningTest
      */
     public function test_a_signed_url_cannot_be_reused()
     {
-        $url = URLSigner::sign('https://example.com');
+        $url = $this->factory->create('https://example.com')->get();
 
-        $this->assertTrue(URLSigner::validate($url));
+        $this->assertTrue($this->factory->validate($url));
 
         $this->expectException(InvalidSignedUrl::class);
-        URLSigner::validate($url);
+        $this->factory->validate($url);
     }
 
     /**
@@ -239,7 +274,7 @@ class SigningTest
         $url = $this->tamperWithSignedUrl(['ac_sg' => 'tampered']);
         $this->expectException(InvalidSignedUrl::class);
 
-        URLSigner::validate($url);
+        $this->factory->validate($url);
 
         $this->assertArrayHasKey('ac_sg',$this->getExpectedException()->errors());
     }
@@ -253,7 +288,7 @@ class SigningTest
         $this->expectException(InvalidSignedUrl::class);
 
         $url = $this->tamperWithSignedUrl(['ac_ts' => time()-2]);
-        URLSigner::validate($url);
+        $this->factory->validate($url);
     }
 
 
@@ -265,7 +300,7 @@ class SigningTest
         $this->expectException(InvalidSignedUrl::class);
 
         $url = $this->tamperWithSignedUrl(['foo' => 'bar']);
-        URLSigner::validate($url);
+        $this->factory->validate($url);
     }
 
     /**
@@ -275,10 +310,17 @@ class SigningTest
     {
         $this->expectNotToPerformAssertions();
 
-        $url = SignedUrl::create('https://example.com')
-            ->withExpiry(time()+300);
 
-        URLSigner::validate($url);
+        $url = $this->factory->create('https://example.com')
+            ->withExpiry(time()+300)
+            ->get();
+
+        try {
+            $this->factory->validate($url);
+        } catch(InvalidSignedUrl $e) {
+            dd($e->errors());
+            throw $e;
+        }
     }
 
     /**
@@ -288,10 +330,9 @@ class SigningTest
     {
         $this->expectException(InvalidSignedUrl::class);
 
-        $url = SignedUrl::create('https://example.com')
-            ->withExpiry(time()-300);
+        $url = $this->factory->create('https://example.com')->withExpiry(time()-300)->get();
 
-        URLSigner::validate($url);
+        $this->factory->validate($url);
     }
 
 
@@ -302,7 +343,7 @@ class SigningTest
     private function tamperWithSignedUrl(array $tamper)
     {
         $base = 'https://example.com';
-        $signed = URLSigner::sign($base);
+        $signed = $this->factory->create($base)->get();
         parse_str(parse_url($signed)['query'],$params);
 
         $params = array_merge($params,$tamper);

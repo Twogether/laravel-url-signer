@@ -5,6 +5,7 @@
 
     "require": {
         "php": "^7.1",
+        "ext-openssl": "*",
         "predis/predis": "^1.1"
     },
     "require-dev": {

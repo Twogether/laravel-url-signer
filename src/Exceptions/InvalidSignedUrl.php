@@ -9,7 +9,7 @@ class InvalidSignedUrl
     public function __construct(array $errors)
     {
         $this->errors = $errors;
-        parent::__construct();
+        parent::__construct($errors[0] ?? '');
     }
 
     public function errors(): array
