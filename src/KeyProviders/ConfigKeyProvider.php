@@ -11,9 +11,9 @@ class ConfigKeyProvider
     /**
      * @throws PrivateKeyNotFound
      */
-    public function getPrivateKey($key_name = 'default'): string
+    public function getPrivateKey($keyName = 'default'): string
     {
-        $key = config('signed_urls.keys.'.$key_name.'.private');
+        $key = config('signed_urls.keys.'.$keyName.'.private');
         if(!$key) {
             throw new PrivateKeyNotFound;
         }
@@ -23,9 +23,9 @@ class ConfigKeyProvider
     /**
      * @throws PublicKeyNotFound
      */
-    public function getPublicKey($key_name = 'default'): string
+    public function getPublicKey($keyName = 'default', $sourceName = null): string
     {
-        $key = config('signed_urls.keys.'.$key_name.'.public');
+        $key = config('signed_urls.keys.'.$keyName.'.public');
         if(!$key) {
             throw new PublicKeyNotFound;
         }

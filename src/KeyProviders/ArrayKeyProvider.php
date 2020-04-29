@@ -29,7 +29,7 @@ class ArrayKeyProvider
     /**
      * @throws PublicKeyNotFound
      */
-    public function getPublicKey($keyName = 'default'): string
+    public function getPublicKey($keyName = 'default', $sourceName = null): string
     {
         if(array_key_exists($keyName,$this->keys) && ($this->keys[$keyName]['public'] ?? false)) {
             return $this->keys[$keyName]['public'];

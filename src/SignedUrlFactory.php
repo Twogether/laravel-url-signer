@@ -84,7 +84,7 @@ class SignedUrlFactory
         $valid = openssl_verify(
             http_build_query($params),
             base64_decode($signature),
-            KeyFormatter::fromString($publicKey ?: $this->keyProvider->getPublicKey($keyName),false),
+            KeyFormatter::fromString($publicKey ?: $this->keyProvider->getPublicKey($keyName,$params['ac_sc']),false),
             OPENSSL_ALGO_SHA256
         );
 

@@ -9,7 +9,7 @@ interface KeyProvider
     /**
      * @throws PublicKeyNotFound
      */
-    public function getPublicKey($key_name = 'default'): string;
+    public function getPublicKey($keyName = 'default', $sourceName = null): string;
 
     /**
      * @throws PrivateKeyNotFound

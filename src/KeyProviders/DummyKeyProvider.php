@@ -11,7 +11,7 @@ class DummyKeyProvider
     /**
      * @throws PrivateKeyNotFound
      */
-    public function getPrivateKey($key_name = 'default'): string
+    public function getPrivateKey($keyName = 'default'): string
     {
         throw new PrivateKeyNotFound;
     }
@@ -19,7 +19,7 @@ class DummyKeyProvider
     /**
      * @throws PublicKeyNotFound
      */
-    public function getPublicKey($key_name = 'default'): string
+    public function getPublicKey($keyName = 'default', $sourceName = null): string
     {
         throw new PublicKeyNotFound;
     }
