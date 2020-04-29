@@ -14,5 +14,5 @@ interface KeyProvider
     /**
      * @throws PrivateKeyNotFound
      */
-    public function getPrivateKey($key_name = 'default'): string;
+    public function getPrivateKey($keyName = 'default'): string;
 }
