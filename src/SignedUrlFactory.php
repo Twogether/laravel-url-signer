@@ -24,17 +24,21 @@ class SignedUrlFactory
         $this->keyProvider = $keyProvider;
     }
 
-    public function create(string $url, string $keyName = 'default')
+    public function make(string $url, string $keyName = 'default'): SignedUrl
     {
         return (new SignedUrl($url))
             ->withKeyName($keyName)
             ->setCacheBroker($this->cacheBroker)
             ->setKeyProvider($this->keyProvider)
             ->withSource($this->appName);
-
     }
 
-    public function validate(string $url, string $keyName = 'default', string $publicKey = '')
+    public function sign(string $url, string $keyName = 'default'): string
+    {
+        return $this->make($url,$keyName)->get();
+    }
+
+    public function validate(string $url, string $keyName = 'default', string $publicKey = ''): bool
     {
         $errors = [
             'ac_ts' => 'Timestamp is missing',

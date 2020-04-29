@@ -84,15 +84,20 @@ add additional `keyName => [pair]` entries to this array.
 Now when you want to make a request from the Source, generate your
 target URL, and pass it through:
 
-`$factory->create(string $url, string $keyName = 'default')`
+`$factory->sign(string $url, string $keyName = 'default')`
 
-This will return a `SignedUrl` object which you can further configure
-if you want to specify additional options. e.g.
+This will return your signed URL, or throw exceptions if your
+configuration is off.
+
+You can also call `make` which returns a `SignedUrl` object
+that supports additional fluent configuration if you want to 
+specify additional options. e.g:
 
 ```
-$factory->create('https://example.com')
+$factory->make('https://example.com')
     ->withKey(EXPLICIT PRIVATE KEY HERE)
     ->withExpiry(time()+300) // 5 minute expiry
+    ->get() // returns the URL as a string
 ```
 
 Here we can explicitly set the private key if we did not configure a provider.
