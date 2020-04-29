@@ -19,6 +19,11 @@ class SignedUrlFactory
         $this->keyProvider = $keyProvider ?: new DummyKeyProvider;
     }
 
+    public function setKeyProvider(KeyProvider $keyProvider)
+    {
+        $this->keyProvider = $keyProvider;
+    }
+
     public function create(string $url, string $keyName = 'default')
     {
         return (new SignedUrl($url))
