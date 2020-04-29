@@ -4,7 +4,6 @@ namespace Twogether\LaravelURLSigner;
 use Twogether\LaravelURLSigner\Contracts\CacheBroker;
 use Twogether\LaravelURLSigner\Contracts\KeyProvider;
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
-use Twogether\LaravelURLSigner\Exceptions\PublicKeyNotFound;
 use Twogether\LaravelURLSigner\KeyProviders\DummyKeyProvider;
 
 class SignedUrlFactory

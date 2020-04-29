@@ -4,7 +4,6 @@ namespace Twogether\LaravelURLSigner;
 use Twogether\LaravelURLSigner\Contracts\CacheBroker;
 use Twogether\LaravelURLSigner\Contracts\KeyProvider;
 use Twogether\LaravelURLSigner\Exceptions\InvalidUrl;
-use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
 
 class SignedUrl
 {
