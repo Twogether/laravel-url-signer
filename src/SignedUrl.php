@@ -14,6 +14,7 @@ class SignedUrl
     private $key = '';
     private $keyName = 'default';
     private $expiry;
+    private $parameters = [];
 
     public function __construct(string $url)
     {
@@ -57,6 +58,12 @@ class SignedUrl
         return $this;
     }
 
+    public function withParameter(string $key, string $value)
+    {
+        $this->parameters[$key] = $value;
+        return $this;
+    }
+
     public function __toString(): string
     {
         return $this->get();
@@ -75,6 +82,8 @@ class SignedUrl
         $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
 
         parse_str($parts['query'] ?? '',$args);
+
+        $args = array_merge($args,$this->parameters);
 
         $args['ac_xp'] = $this->expiry ?: time() + 120;
         $args['ac_ts'] = time();

@@ -337,6 +337,25 @@ class SigningTest
 
 
     /**
+     * @group parameters
+     */
+    public function test_a_parameter_can_be_added()
+    {
+        $url = $this->factory->make('https://example.com?foo=bar')->withParameter('bar','foo')->get();
+
+        $this->factory->validate($url);
+
+        $parts = parse_url($url);
+        parse_str($parts['query'],$query);
+
+        $this->assertEquals('bar',$query['foo']);
+        $this->assertEquals('foo',$query['bar']);
+
+    }
+
+
+
+    /**
      * @param array $tamper
      * @return string
      */
