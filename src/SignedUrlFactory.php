@@ -24,6 +24,15 @@ class SignedUrlFactory
         $this->keyProvider = $keyProvider;
     }
 
+    public static function reconstituteUrl(array $parts, array $params)
+    {
+        $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
+        if(count($params)) {
+            $url .= "?".http_build_query($params);
+        }
+        return $url;
+    }
+
     public function make(string $url, string $keyName = 'default'): SignedUrl
     {
         return (new SignedUrl($url))
@@ -48,7 +57,9 @@ class SignedUrlFactory
             'ac_xp' => 'Expiry is missing',
         ];
 
-        $query = parse_url($url)['query'] ?? null;
+        $url_parts = parse_url($url);
+
+        $query = $url_parts['query'] ?? null;
 
         if(!$query) {
             throw new InvalidSignedUrl($errors);
@@ -90,7 +101,7 @@ class SignedUrlFactory
         ksort($params);
 
         $valid = openssl_verify(
-            http_build_query($params),
+            static::reconstituteUrl($url_parts,$params),
             base64_decode($signature),
             KeyFormatter::fromString($publicKey ?: $this->keyProvider->getPublicKey($keyName,$params['ac_sc']),false),
             OPENSSL_ALGO_SHA256

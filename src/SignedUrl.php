@@ -79,8 +79,6 @@ class SignedUrl
             throw new InvalidUrl;
         }
 
-        $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
-
         parse_str($parts['query'] ?? '',$args);
 
         $args = array_merge($args,$this->parameters);
@@ -92,8 +90,10 @@ class SignedUrl
 
         ksort($args);
 
+        $url = SignedUrlFactory::reconstituteUrl($parts,$args);
+
         openssl_sign(
-            http_build_query($args),
+            $url,
             $signature,
             KeyFormatter::fromString($key,true),
             OPENSSL_ALGO_SHA256
@@ -101,7 +101,8 @@ class SignedUrl
 
         $args['ac_sg'] = base64_encode($signature);
 
-        return $url."?".http_build_query($args);
+
+        return SignedUrlFactory::reconstituteUrl($parts,$args);
 
     }
 
