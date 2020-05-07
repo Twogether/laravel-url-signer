@@ -354,6 +354,54 @@ class SigningTest
     }
 
 
+    /**
+     * @group url
+     */
+    public function test_a_url_cannot_be_changed()
+    {
+        $this->expectException(InvalidSignedUrl::class);
+
+        $url = $this->factory->make('https://example.com');
+
+        $url = str_replace('example.com','different-example.com',$url);
+
+        $this->factory->validate($url);
+
+    }
+
+
+    /**
+     * @group url
+     */
+    public function test_a_scheme_cannot_be_changed()
+    {
+        $this->expectException(InvalidSignedUrl::class);
+
+        $url = $this->factory->make('https://example.com');
+
+        $url = 'http'.substr($url,5);
+
+        $this->factory->validate($url);
+
+    }
+
+
+    /**
+     * @group url
+     */
+    public function test_a_path_cannot_be_changed()
+    {
+        $this->expectException(InvalidSignedUrl::class);
+
+        $url = $this->factory->make('https://example.com/path-to/my-folder');
+
+        $url = str_replace('/path-to/my-folder','/different-path',$url);
+
+        $this->factory->validate($url);
+
+    }
+
+
 
     /**
      * @param array $tamper
