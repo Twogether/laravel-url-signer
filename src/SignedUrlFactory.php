@@ -58,6 +58,7 @@ class SignedUrlFactory
         ];
 
         $url_parts = parse_url($url);
+        $url_parts['scheme'] = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? $url_parts['scheme'];
 
         $query = $url_parts['query'] ?? null;
 
