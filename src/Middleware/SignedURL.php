@@ -11,7 +11,11 @@ class SignedURL
         try {
             app('Twogether\URLSigner')->validate($request->fullUrl(),$keyName);
         } catch(InvalidSignedUrl $exception) {
-            return response()->json($exception->errors(),401);
+            if(config('app.debug') || $request->expectsJson()) {
+                return response()->json($exception->errors(),401);
+            } else {
+                abort(401);
+            }
         }
 
         return $next($request);
