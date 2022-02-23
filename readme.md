@@ -16,7 +16,7 @@ command which you can use to generate a key pair if you need one.
 
 You'll want to install the package into both the Source and Target.
 
-If you're not using Laravel, you will want to generate an OpenSSL
+If you're not using Laravel, you will want to generate an RSA256
 Public/Private Key Pair.
 
 

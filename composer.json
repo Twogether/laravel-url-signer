@@ -4,12 +4,12 @@
     "type": "library",
 
     "require": {
-        "php": "^7.1",
-        "ext-openssl": "*",
-        "predis/predis": "^1.1"
+        "php": "^7.1|^8.0",
+        "ext-openssl": "*"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0"
+        "orchestra/testbench": "^7.0",
+        "predis/predis": "^1.1"
     },
 
     "autoload": {
