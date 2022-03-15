@@ -2,6 +2,7 @@
     "name": "twogether/laravel-url-signer",
     "description": "Signs and validates URLs with public/private keys",
     "type": "library",
+    "license": "MIT",
 
     "require": {
         "php": "^7.1|^8.0",
