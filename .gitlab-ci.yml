@@ -1,0 +1,31 @@
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Composer.gitlab-ci.yml
+
+test:
+  # Select image from https://hub.docker.com/_/php/
+  image: php:8.2
+
+  variables:
+    COMPOSER_AUTH_TOKEN: "$CI_JOB_TOKEN"
+    COMPOSER_AUTH_USER: job-token
+    COMPOSER_AUTH_HOST: "$CI_SERVER_HOST"
+    COMPOSER_AUTH: '{"gitlab-oauth":{"$CI_SERVER_HOST":"$CI_JOB_TOKEN"}}'
+
+  # Select what we should cache
+  cache:
+    paths:
+      - vendor/
+
+  before_script:
+    - apt update -yqq
+    - apt install git libpq-dev libzip-dev zip -yqq
+    # Install composer
+    - curl -sS https://getcomposer.org/installer | php
+
+    # Install all project dependencies
+    - php composer.phar install --no-progress
+
+  script:
+    - vendor/bin/phpunit --configuration phpunit.xml

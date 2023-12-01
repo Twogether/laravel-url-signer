@@ -1,6 +1,7 @@
 <?php
 namespace Twogether\LaravelURLSignerTests;
 
+use Twogether\LaravelURLSigner\CacheBrokers\StaticCacheBroker;
 use Twogether\LaravelURLSigner\Exceptions\InvalidSignedUrl;
 use Twogether\LaravelURLSigner\Exceptions\InvalidUrl;
 use Twogether\LaravelURLSigner\Exceptions\PrivateKeyNotFound;
@@ -27,7 +28,7 @@ class SigningTest
 
         $this->factory = new SignedUrlFactory(
             'test',
-            new LaravelCacheBroker(),
+            new StaticCacheBroker(),
             new ConfigKeyProvider()
         );
     }
