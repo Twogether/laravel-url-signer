@@ -37,7 +37,6 @@ class SignedUrlFactory
     {
         return (new SignedUrl($url))
             ->withKeyName($keyName)
-            ->setCacheBroker($this->cacheBroker)
             ->setKeyProvider($this->keyProvider)
             ->withSource($this->appName);
     }

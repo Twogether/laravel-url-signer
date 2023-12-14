@@ -4,6 +4,7 @@ namespace Twogether\LaravelURLSigner;
 use Twogether\LaravelURLSigner\Contracts\CacheBroker;
 use Twogether\LaravelURLSigner\Contracts\KeyProvider;
 use Twogether\LaravelURLSigner\Exceptions\InvalidUrl;
+use Hidehalo\Nanoid\Client;
 
 class SignedUrl
 {
@@ -24,6 +25,7 @@ class SignedUrl
 
     public function setCacheBroker(CacheBroker $cacheBroker): SignedUrl
     {
+        // Deprecated since we're using Nano IDs now.
         $this->cacheBroker = $cacheBroker;
         return $this;
     }
@@ -85,7 +87,7 @@ class SignedUrl
 
         $args['ac_xp'] = $this->expiry ?: time() + 120;
         $args['ac_ts'] = time();
-        $args['ac_nc'] = $this->cacheBroker->incr('signed-urls-signing-nonce_'.$args['ac_ts'],300);
+        $args['ac_nc'] = (new Client)->generateId();
         $args['ac_sc'] = $this->source;
 
         ksort($args);
