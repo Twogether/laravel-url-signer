@@ -42,21 +42,12 @@ using spaces, and keep it simple. The _Target_ will use this to verify
 that requests from this source are unique, so you should not duplicate
 app_names and use them with the same target.
 
-The CacheBroker is used to generate and validate one-time _nonce_ codes
+The CacheBroker is used to validate one-time _nonce_ codes
 to prevent replay attacks. It expects to use Redis for this, and a
 PredisCacheBroker class is available for you to use by passing in an
 instance of `Predis\Client`. If you are not using Redis, or if you do
 not use Predis, then you can check this class to see what it does and
 implement your own by implementing the interface in `Contracts\CacheBroker`.
-
-**Important note**
-
-If you choose to implement your own CacheBroker please make sure you
-understand exactly what the `setNx` and `incr` methods do in Redis. Every
-URL generated during a one second interval must have a unique nonce
-value, and these must be validated. That means your implementation needs
-to be thread-safe, and must validate correctly. Otherwise URLs can be
-replayed and this will cause you problems.
 
 Lastly the KeyProvider is optional. If you do not choose to use it then
 you will have to explicitly set the key every time you sign or validate
