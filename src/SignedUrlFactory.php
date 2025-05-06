@@ -12,7 +12,7 @@ class SignedUrlFactory
     private $keyProvider;
     private $appName;
 
-    public function __construct(string $appName, CacheBroker $cacheBroker, KeyProvider $keyProvider = null)
+    public function __construct(string $appName, CacheBroker $cacheBroker, ?KeyProvider $keyProvider = null)
     {
         $this->appName = str_replace(' ','',strtolower($appName));
         $this->cacheBroker = $cacheBroker;
