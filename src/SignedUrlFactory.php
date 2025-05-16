@@ -26,10 +26,17 @@ class SignedUrlFactory
 
     public static function reconstituteUrl(array $parts, array $params)
     {
-        $url = $parts['scheme']."://".$parts['host'].($parts['path'] ?? '');
-        if(count($params)) {
-            $url .= "?".http_build_query($params);
+        $scheme = $parts['scheme'] ?? 'http';
+        $host   = $parts['host'];
+        $port   = isset($parts['port']) ? ":{$parts['port']}" : '';
+        $path   = $parts['path'] ?? '';
+
+        $url = "{$scheme}://{$host}{$port}{$path}";
+
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
         }
+
         return $url;
     }
 
